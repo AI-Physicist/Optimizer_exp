@@ -1,0 +1,7 @@
+optimizer,lr,r,steps,final_loss,best_loss,avg_step_time,peak_memory_mb,log_file
+rmsprop_pnorm,0.001,1.0,1000,10.385182,10.384965,0.01081347,1175.9473,logs/formal/rmsprop_pnorm_lr0p001.csv
+rmsprop,0.001,,1000,10.410859,10.410859,0.008034499999999998,1175.9473,logs/formal/rmsprop_lr0p001.csv
+rmsprop_no_memory,0.001,,1000,10.417166,10.417166,0.007801569999999996,1175.9473,logs/formal/rmsprop_no_memory_lr0p001.csv
+adafactor,0.001,,1000,10.421537,10.420775,0.020192790000000006,1138.728,logs/formal/adafactor_lr0p001.csv
+sgd,0.001,,1000,10.492547,10.492456,0.0072234199999999995,1175.9473,logs/formal/sgd_lr0p001.csv
+adamw,0.001,,1000,10.541507,10.541507,0.00769158,1213.3496,logs/formal/adamw_lr0p001.csv

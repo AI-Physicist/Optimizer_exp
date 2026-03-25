@@ -1,0 +1,13 @@
+run,optimizer,lr,r,steps,final_loss,best_loss,avg_step_time,peak_memory_mb,diverged,log_file
+rmsprop_pnorm_lr0p001_r1,rmsprop_pnorm,0.001,1.0,200,10.826313,10.826313,0.013768250000000001,1175.9473,0,logs/sweeps/rmsprop_pnorm_lr0p001_r1.csv
+rmsprop_pnorm_lr0p001_r1p5,rmsprop_pnorm,0.001,1.5,200,19.95283,19.95283,0.013692600000000003,1175.9473,0,logs/sweeps/rmsprop_pnorm_lr0p001_r1p5.csv
+rmsprop_pnorm_lr0p001_r2,rmsprop_pnorm,0.001,2.0,200,22.596874,22.596874,0.0139072,1175.9473,0,logs/sweeps/rmsprop_pnorm_lr0p001_r2.csv
+rmsprop_pnorm_lr0p001_r3,rmsprop_pnorm,0.001,3.0,200,25.089217,25.089217,0.013497000000000004,1175.9473,0,logs/sweeps/rmsprop_pnorm_lr0p001_r3.csv
+rmsprop_pnorm_lr0p0003_r1,rmsprop_pnorm,0.0003,1.0,200,26.775816,26.775816,0.012837200000000002,1175.9473,0,logs/sweeps/rmsprop_pnorm_lr0p0003_r1.csv
+rmsprop_pnorm_lr0p0003_r1p5,rmsprop_pnorm,0.0003,1.5,200,31.153306,31.153306,0.012448200000000001,1175.9473,0,logs/sweeps/rmsprop_pnorm_lr0p0003_r1p5.csv
+rmsprop_pnorm_lr0p0003_r2,rmsprop_pnorm,0.0003,2.0,200,32.621975,32.621975,0.01360285,1175.9473,0,logs/sweeps/rmsprop_pnorm_lr0p0003_r2.csv
+rmsprop_pnorm_lr0p0003_r3,rmsprop_pnorm,0.0003,3.0,200,33.820906,33.820906,0.012961250000000002,1175.9473,0,logs/sweeps/rmsprop_pnorm_lr0p0003_r3.csv
+rmsprop_pnorm_lr0p0001_r1,rmsprop_pnorm,0.0001,1.0,200,35.973307,35.973307,0.013130899999999996,1175.9473,0,logs/sweeps/rmsprop_pnorm_lr0p0001_r1.csv
+rmsprop_pnorm_lr0p0001_r1p5,rmsprop_pnorm,0.0001,1.5,200,37.447929,37.447929,0.013669900000000002,1175.9473,0,logs/sweeps/rmsprop_pnorm_lr0p0001_r1p5.csv
+rmsprop_pnorm_lr0p0001_r2,rmsprop_pnorm,0.0001,2.0,200,38.387459,38.387459,0.01319735,1175.9473,0,logs/sweeps/rmsprop_pnorm_lr0p0001_r2.csv
+rmsprop_pnorm_lr0p0001_r3,rmsprop_pnorm,0.0001,3.0,200,40.253207,40.253207,0.014091500000000002,1175.9473,0,logs/sweeps/rmsprop_pnorm_lr0p0001_r3.csv
