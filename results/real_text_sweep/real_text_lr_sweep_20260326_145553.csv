@@ -1,0 +1,13 @@
+optimizer,lr,final_loss,step_time,log_file
+adamw,0.0001,3.269683,0.030838,/data3/hywan/optimizer_exp/logs/real_text_sweep/adamw_lr0p0001.csv
+adamw,0.0003,2.487945,0.028318,/data3/hywan/optimizer_exp/logs/real_text_sweep/adamw_lr0p0003.csv
+adamw,0.001,2.328431,0.028796,/data3/hywan/optimizer_exp/logs/real_text_sweep/adamw_lr0p001.csv
+sgd,0.001,3.180888,0.026574,/data3/hywan/optimizer_exp/logs/real_text_sweep/sgd_lr0p001.csv
+sgd,0.003,2.738796,0.028877,/data3/hywan/optimizer_exp/logs/real_text_sweep/sgd_lr0p003.csv
+sgd,0.01,2.661638,0.026290,/data3/hywan/optimizer_exp/logs/real_text_sweep/sgd_lr0p01.csv
+rmsprop,0.0001,3.129058,0.029933,/data3/hywan/optimizer_exp/logs/real_text_sweep/rmsprop_lr0p0001.csv
+rmsprop,0.0003,3.218093,0.028809,/data3/hywan/optimizer_exp/logs/real_text_sweep/rmsprop_lr0p0003.csv
+rmsprop,0.001,3.615904,0.027285,/data3/hywan/optimizer_exp/logs/real_text_sweep/rmsprop_lr0p001.csv
+adafactor,0.001,3.945813,0.030679,/data3/hywan/optimizer_exp/logs/real_text_sweep/adafactor_lr0p001.csv
+adafactor,0.003,4.255196,0.035544,/data3/hywan/optimizer_exp/logs/real_text_sweep/adafactor_lr0p003.csv
+adafactor,0.01,2.854973,0.048048,/data3/hywan/optimizer_exp/logs/real_text_sweep/adafactor_lr0p01.csv
