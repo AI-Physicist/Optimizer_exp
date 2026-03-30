@@ -1,0 +1,8 @@
+# Real Text 1000-Step Multi-Seed Summary
+
+| optimizer | num_seeds | seeds | final_loss_mean | final_loss_std | avg_step_time_mean | peak_memory_mb_max | max_step |
+|---|---:|---|---:|---:|---:|---:|---:|
+| adamw | 3 | 1,2,3 | 1.861598 | 0.029402 | 0.028592 | 0.00 | 1000 |
+| adafactor | 3 | 1,2,3 | 2.354009 | 0.038546 | 0.046224 | 0.00 | 1000 |
+| sgd | 3 | 1,2,3 | 2.434003 | 0.024286 | 0.027212 | 0.00 | 1000 |
+| rmsprop | 3 | 1,2,3 | 2.560487 | 0.057570 | 0.028442 | 0.00 | 1000 |

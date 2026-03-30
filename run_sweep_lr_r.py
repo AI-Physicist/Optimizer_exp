@@ -123,8 +123,8 @@ def main():
     parser.add_argument("--seq_len", type=int, default=128)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--diverge_loss", type=float, default=1e6)
-    parser.add_argument("--log_dir", type=str, default="logs/sweeps")
-    parser.add_argument("--out_dir", type=str, default="results/sweeps")
+    parser.add_argument("--log_dir", type=str, default="logs/synthetic/r_sweeps")
+    parser.add_argument("--out_dir", type=str, default="results/synthetic/r_sweeps")
     args = parser.parse_args()
 
     os.makedirs(args.log_dir, exist_ok=True)

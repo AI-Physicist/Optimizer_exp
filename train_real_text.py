@@ -8,7 +8,17 @@ import torch
 import torch.nn.functional as F
 from tqdm import trange
 
-from train import DecoderOnlyTransformer, build_optimizer, count_parameters, get_peak_memory_mb
+from train import (
+    DecoderOnlyTransformer,
+    build_optimizer,
+    capture_pre_step_state,
+    compute_param_norm_l2,
+    compute_update_metrics,
+    count_parameters,
+    estimate_top_hessian_eig,
+    get_peak_memory_mb,
+    get_trainable_params,
+)
 
 
 def load_corpus(file_list):
@@ -47,8 +57,14 @@ def main():
     parser.add_argument("--rmsprop_p", type=float, default=1.0)
     parser.add_argument("--weight_decay", type=float, default=0.01)
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--log_every", type=int, default=10)
+    parser.add_argument("--curvature_every", type=int, default=50)
+    parser.add_argument("--hessian_power_iters", type=int, default=5)
     parser.add_argument("--log_file", type=str, default="logs/real_text/real_text.csv")
     args = parser.parse_args()
+    args.log_every = max(1, args.log_every)
+    args.curvature_every = max(0, args.curvature_every)
+    args.hessian_power_iters = max(1, args.hessian_power_iters)
 
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
@@ -73,6 +89,7 @@ def main():
     optimizer = build_optimizer(
         args.optimizer, model, args.lr, args.weight_decay, args.rmsprop_p
     )
+    trainable_params = get_trainable_params(model)
 
     total_params = count_parameters(model)
     print(f"model_parameter_count: {total_params} ({total_params / 1e6:.2f}M)")
@@ -105,6 +122,12 @@ def main():
                 "optimizer",
                 "seed",
                 "peak_memory_mb",
+                "param_norm_l2",
+                "grad_norm_l2",
+                "update_norm_l2",
+                "update_ratio",
+                "grad_update_cos",
+                "hessian_top_eig",
             ],
         )
         writer.writeheader()
@@ -116,6 +139,11 @@ def main():
         progress = trange(1, args.steps + 1, desc="train_real_text", leave=True)
         for step in progress:
             t0 = time.perf_counter()
+            should_log = (step % args.log_every == 0) or (step == args.steps)
+            should_curvature = (
+                args.curvature_every > 0
+                and ((step % args.curvature_every == 0) or (step == args.steps))
+            )
 
             x, y = sample_batch(data, args.batch_size, args.seq_len, device)
             logits = model(x)
@@ -123,22 +151,51 @@ def main():
 
             optimizer.zero_grad(set_to_none=True)
             loss.backward()
+
+            param_before = None
+            grad_before = None
+            grad_norm = float("nan")
+            if should_log:
+                param_before, grad_before, grad_norm = capture_pre_step_state(trainable_params)
+
             optimizer.step()
 
             step_time = time.perf_counter() - t0
             running_step_time += step_time
             running_loss += loss.item()
 
-            should_log = (step % 10 == 0) or (step == args.steps)
             if should_log:
-                window = 10 if step % 10 == 0 else (step % 10)
+                window = args.log_every if step % args.log_every == 0 else (step % args.log_every)
                 avg_loss = running_loss / window
                 avg_step_time = running_step_time / window
                 lr = optimizer.param_groups[0]["lr"]
                 peak_mb = get_peak_memory_mb(device)
+                param_norm = compute_param_norm_l2(trainable_params)
+                update_norm = float("nan")
+                grad_update_cos = float("nan")
+                if param_before is not None and grad_before is not None:
+                    update_norm, grad_update_cos = compute_update_metrics(
+                        trainable_params, param_before, grad_before
+                    )
+                update_ratio = update_norm / (param_norm + 1e-12)
+
+                hessian_top_eig = float("nan")
+                if should_curvature:
+                    optimizer.zero_grad(set_to_none=True)
+                    hessian_top_eig = estimate_top_hessian_eig(
+                        model=model,
+                        params=trainable_params,
+                        x=x,
+                        y=y,
+                        vocab_size=vocab_size,
+                        power_iters=args.hessian_power_iters,
+                    )
+                    optimizer.zero_grad(set_to_none=True)
 
                 print(
-                    f"step={step} loss={avg_loss:.4f} lr={lr:.6g} step_time={avg_step_time:.4f}s"
+                    f"step={step} loss={avg_loss:.4f} lr={lr:.6g} "
+                    f"grad_norm={grad_norm:.4e} update_ratio={update_ratio:.4e} "
+                    f"hessian_top={hessian_top_eig:.4e} step_time={avg_step_time:.4f}s"
                 )
 
                 writer.writerow(
@@ -150,6 +207,12 @@ def main():
                         "optimizer": args.optimizer,
                         "seed": args.seed,
                         "peak_memory_mb": f"{peak_mb:.4f}",
+                        "param_norm_l2": f"{param_norm:.8e}",
+                        "grad_norm_l2": f"{grad_norm:.8e}",
+                        "update_norm_l2": f"{update_norm:.8e}",
+                        "update_ratio": f"{update_ratio:.8e}",
+                        "grad_update_cos": f"{grad_update_cos:.8e}",
+                        "hessian_top_eig": f"{hessian_top_eig:.8e}",
                     }
                 )
                 f.flush()

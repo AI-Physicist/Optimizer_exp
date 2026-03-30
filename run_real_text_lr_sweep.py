@@ -62,8 +62,8 @@ def main():
     seed = 42
 
     root = os.path.dirname(os.path.abspath(__file__))
-    log_dir = os.path.join(root, "logs", "real_text_sweep")
-    out_dir = os.path.join(root, "results", "real_text_sweep")
+    log_dir = os.path.join(root, "logs", "real_text", "lr_sweep_300")
+    out_dir = os.path.join(root, "results", "real_text", "lr_sweep_300")
     os.makedirs(log_dir, exist_ok=True)
     os.makedirs(out_dir, exist_ok=True)
 

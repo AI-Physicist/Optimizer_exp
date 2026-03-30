@@ -8,11 +8,11 @@ from summarize_results import load_logs, make_svg
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--vocab_size", type=int, default=32000)
-    parser.add_argument("--log_dir", type=str, default="logs/formal")
+    parser.add_argument("--log_dir", type=str, default="logs/synthetic/formal")
     parser.add_argument(
         "--output",
         type=str,
-        default="results/formal/formal_optimizer_comparison.svg",
+        default="results/synthetic/formal/formal_optimizer_comparison.svg",
     )
     args = parser.parse_args()
 

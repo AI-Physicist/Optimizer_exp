@@ -4,6 +4,7 @@ import math
 import os
 import time
 from dataclasses import dataclass
+from typing import List, Optional, Tuple
 
 import numpy as np
 import torch
@@ -260,6 +261,9 @@ class TrainConfig:
     seed: int = BASELINE_CONFIG["seed"]
     log_file: str = "train_log.csv"
     rmsprop_p: float = 2.0
+    log_every: int = 10
+    curvature_every: int = 50
+    hessian_power_iters: int = 5
 
 
 def build_optimizer(
@@ -313,6 +317,101 @@ def get_peak_memory_mb(device: torch.device) -> float:
     return torch.cuda.max_memory_allocated(device) / (1024 ** 2)
 
 
+def get_trainable_params(model: nn.Module) -> List[torch.nn.Parameter]:
+    return [p for p in model.parameters() if p.requires_grad]
+
+
+def capture_pre_step_state(
+    params: List[torch.nn.Parameter],
+) -> Tuple[List[torch.Tensor], List[Optional[torch.Tensor]], float]:
+    param_before = [p.detach().clone() for p in params]
+    grad_before: List[Optional[torch.Tensor]] = []
+    grad_sq_sum = 0.0
+    for p in params:
+        if p.grad is None:
+            grad_before.append(None)
+            continue
+        g = p.grad.detach().clone()
+        grad_before.append(g)
+        grad_sq_sum += g.float().pow(2).sum().item()
+    return param_before, grad_before, math.sqrt(grad_sq_sum)
+
+
+def compute_param_norm_l2(params: List[torch.nn.Parameter]) -> float:
+    total = 0.0
+    for p in params:
+        total += p.detach().float().pow(2).sum().item()
+    return math.sqrt(total)
+
+
+def compute_update_metrics(
+    params: List[torch.nn.Parameter],
+    param_before: List[torch.Tensor],
+    grad_before: List[Optional[torch.Tensor]],
+    eps: float = 1e-12,
+) -> Tuple[float, float]:
+    update_sq_sum = 0.0
+    grad_sq_sum = 0.0
+    grad_update_dot = 0.0
+
+    for p, p_prev, g_prev in zip(params, param_before, grad_before):
+        delta = (p.detach() - p_prev).float()
+        update_sq_sum += delta.pow(2).sum().item()
+        if g_prev is None:
+            continue
+        g_prev_f = g_prev.float()
+        grad_sq_sum += g_prev_f.pow(2).sum().item()
+        grad_update_dot += (g_prev_f * delta).sum().item()
+
+    update_norm = math.sqrt(update_sq_sum)
+    grad_norm = math.sqrt(grad_sq_sum)
+    grad_update_cos = grad_update_dot / (grad_norm * update_norm + eps)
+    return update_norm, grad_update_cos
+
+
+def normalize_vector_list(vs: List[torch.Tensor], eps: float = 1e-12) -> List[torch.Tensor]:
+    norm_sq = 0.0
+    for v in vs:
+        norm_sq += v.float().pow(2).sum().item()
+    norm = math.sqrt(norm_sq)
+    denom = norm + eps
+    return [v / denom for v in vs]
+
+
+def estimate_top_hessian_eig(
+    model: nn.Module,
+    params: List[torch.nn.Parameter],
+    x: torch.Tensor,
+    y: torch.Tensor,
+    vocab_size: int,
+    power_iters: int,
+    eps: float = 1e-12,
+) -> float:
+    if power_iters <= 0:
+        return float("nan")
+
+    vs = normalize_vector_list([torch.randn_like(p) for p in params], eps=eps)
+    lambda_est = float("nan")
+
+    for _ in range(power_iters):
+        logits = model(x)
+        loss = F.cross_entropy(logits.view(-1, vocab_size), y.view(-1))
+        grads = torch.autograd.grad(loss, params, create_graph=True)
+        grad_vec_prod = sum((g * v).sum() for g, v in zip(grads, vs))
+        hvs = torch.autograd.grad(grad_vec_prod, params, retain_graph=False)
+
+        lambda_est = sum((v * hv).sum().item() for v, hv in zip(vs, hvs))
+        hv_norm_sq = 0.0
+        for hv in hvs:
+            hv_norm_sq += hv.float().pow(2).sum().item()
+        hv_norm = math.sqrt(hv_norm_sq)
+        if hv_norm <= eps:
+            break
+        vs = [hv.detach() / (hv_norm + eps) for hv in hvs]
+
+    return lambda_est
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--steps", type=int, default=BASELINE_CONFIG["steps"])
@@ -329,9 +428,15 @@ def main():
     parser.add_argument("--weight_decay", type=float, default=BASELINE_CONFIG["weight_decay"])
     parser.add_argument("--seed", type=int, default=BASELINE_CONFIG["seed"])
     parser.add_argument("--rmsprop_p", type=float, default=2.0)
+    parser.add_argument("--log_every", type=int, default=10)
+    parser.add_argument("--curvature_every", type=int, default=50)
+    parser.add_argument("--hessian_power_iters", type=int, default=5)
     parser.add_argument("--log_file", type=str, default="train_log.csv")
     args = parser.parse_args()
     cfg = TrainConfig(**vars(args))
+    cfg.log_every = max(1, cfg.log_every)
+    cfg.curvature_every = max(0, cfg.curvature_every)
+    cfg.hessian_power_iters = max(1, cfg.hessian_power_iters)
 
     np.random.seed(cfg.seed)
     torch.manual_seed(cfg.seed)
@@ -353,6 +458,7 @@ def main():
     optimizer = build_optimizer(
         cfg.optimizer, model, cfg.lr, cfg.weight_decay, cfg.rmsprop_p
     )
+    trainable_params = get_trainable_params(model)
 
     print(f"model_parameter_count: {total_params} ({total_params / 1e6:.2f}M)")
     print(f"device: {device}")
@@ -382,6 +488,12 @@ def main():
                 "optimizer",
                 "seed",
                 "peak_memory_mb",
+                "param_norm_l2",
+                "grad_norm_l2",
+                "update_norm_l2",
+                "update_ratio",
+                "grad_update_cos",
+                "hessian_top_eig",
             ],
         )
         writer.writeheader()
@@ -393,6 +505,11 @@ def main():
         progress = trange(1, cfg.steps + 1, desc="train", leave=True)
         for step in progress:
             t0 = time.perf_counter()
+            should_log = (step % cfg.log_every == 0) or (step == cfg.steps)
+            should_curvature = (
+                cfg.curvature_every > 0
+                and ((step % cfg.curvature_every == 0) or (step == cfg.steps))
+            )
 
             x, y = sample_batch(cfg.batch_size, cfg.seq_len, cfg.vocab_size, device)
             logits = model(x)
@@ -400,22 +517,51 @@ def main():
 
             optimizer.zero_grad(set_to_none=True)
             loss.backward()
+
+            param_before = None
+            grad_before = None
+            grad_norm = float("nan")
+            if should_log:
+                param_before, grad_before, grad_norm = capture_pre_step_state(trainable_params)
+
             optimizer.step()
 
             step_time = time.perf_counter() - t0
             running_step_time += step_time
             running_loss += loss.item()
 
-            should_log = (step % 10 == 0) or (step == cfg.steps)
             if should_log:
-                window = 10 if step % 10 == 0 else (step % 10)
+                window = cfg.log_every if step % cfg.log_every == 0 else (step % cfg.log_every)
                 avg_loss = running_loss / window
                 avg_step_time = running_step_time / window
                 lr = optimizer.param_groups[0]["lr"]
                 peak_mb = get_peak_memory_mb(device)
+                param_norm = compute_param_norm_l2(trainable_params)
+                update_norm = float("nan")
+                grad_update_cos = float("nan")
+                if param_before is not None and grad_before is not None:
+                    update_norm, grad_update_cos = compute_update_metrics(
+                        trainable_params, param_before, grad_before
+                    )
+                update_ratio = update_norm / (param_norm + 1e-12)
+
+                hessian_top_eig = float("nan")
+                if should_curvature:
+                    optimizer.zero_grad(set_to_none=True)
+                    hessian_top_eig = estimate_top_hessian_eig(
+                        model=model,
+                        params=trainable_params,
+                        x=x,
+                        y=y,
+                        vocab_size=cfg.vocab_size,
+                        power_iters=cfg.hessian_power_iters,
+                    )
+                    optimizer.zero_grad(set_to_none=True)
 
                 print(
-                    f"step={step} loss={avg_loss:.4f} lr={lr:.6g} step_time={avg_step_time:.4f}s"
+                    f"step={step} loss={avg_loss:.4f} lr={lr:.6g} "
+                    f"grad_norm={grad_norm:.4e} update_ratio={update_ratio:.4e} "
+                    f"hessian_top={hessian_top_eig:.4e} step_time={avg_step_time:.4f}s"
                 )
 
                 writer.writerow(
@@ -427,6 +573,12 @@ def main():
                         "optimizer": cfg.optimizer,
                         "seed": cfg.seed,
                         "peak_memory_mb": f"{peak_mb:.4f}",
+                        "param_norm_l2": f"{param_norm:.8e}",
+                        "grad_norm_l2": f"{grad_norm:.8e}",
+                        "update_norm_l2": f"{update_norm:.8e}",
+                        "update_ratio": f"{update_ratio:.8e}",
+                        "grad_update_cos": f"{grad_update_cos:.8e}",
+                        "hessian_top_eig": f"{hessian_top_eig:.8e}",
                     }
                 )
                 f.flush()

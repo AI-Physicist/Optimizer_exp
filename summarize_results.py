@@ -274,8 +274,8 @@ def main():
     args = parser.parse_args()
 
     root = os.path.dirname(os.path.abspath(__file__))
-    log_dir = os.path.join(root, "logs")
-    out_dir = os.path.join(root, "results")
+    log_dir = os.path.join(root, "logs", "synthetic", "base")
+    out_dir = os.path.join(root, "results", "synthetic", "base")
     os.makedirs(out_dir, exist_ok=True)
 
     data = load_logs(log_dir)

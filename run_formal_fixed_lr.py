@@ -113,8 +113,8 @@ def main():
         type=str,
         default="adamw,sgd,rmsprop,rmsprop_no_memory,rmsprop_pnorm,adafactor",
     )
-    parser.add_argument("--log_dir", type=str, default="logs/formal")
-    parser.add_argument("--out_dir", type=str, default="results/formal")
+    parser.add_argument("--log_dir", type=str, default="logs/synthetic/formal")
+    parser.add_argument("--out_dir", type=str, default="results/synthetic/formal")
     args = parser.parse_args()
 
     os.makedirs(args.log_dir, exist_ok=True)
