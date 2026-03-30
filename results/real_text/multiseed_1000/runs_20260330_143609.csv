@@ -1,0 +1,13 @@
+optimizer,lr,seed,final_loss,step_time,log_file
+adamw,0.001,1,1.848478,0.008172,logs/real_text/multiseed_1000/adamw_lr0p001_seed1.csv
+adamw,0.001,2,1.895276,0.008295,logs/real_text/multiseed_1000/adamw_lr0p001_seed2.csv
+adamw,0.001,3,1.841042,0.007722,logs/real_text/multiseed_1000/adamw_lr0p001_seed3.csv
+sgd,0.01,1,2.406162,0.007453,logs/real_text/multiseed_1000/sgd_lr0p01_seed1.csv
+sgd,0.01,2,2.450828,0.007326,logs/real_text/multiseed_1000/sgd_lr0p01_seed2.csv
+sgd,0.01,3,2.445020,0.007515,logs/real_text/multiseed_1000/sgd_lr0p01_seed3.csv
+rmsprop,0.0001,1,2.509087,0.007769,logs/real_text/multiseed_1000/rmsprop_lr0p0001_seed1.csv
+rmsprop,0.0001,2,2.622419,0.007596,logs/real_text/multiseed_1000/rmsprop_lr0p0001_seed2.csv
+rmsprop,0.0001,3,2.550519,0.007504,logs/real_text/multiseed_1000/rmsprop_lr0p0001_seed3.csv
+adafactor,0.01,1,2.311792,0.015425,logs/real_text/multiseed_1000/adafactor_lr0p01_seed1.csv
+adafactor,0.01,2,2.366434,0.015816,logs/real_text/multiseed_1000/adafactor_lr0p01_seed2.csv
+adafactor,0.01,3,2.383472,0.016283,logs/real_text/multiseed_1000/adafactor_lr0p01_seed3.csv

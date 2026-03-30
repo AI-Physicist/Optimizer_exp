@@ -6,9 +6,9 @@ import os
 from statistics import mean
 
 
-def load_logs(log_dir):
+def load_log_paths(paths):
     data = {}
-    for path in sorted(glob.glob(os.path.join(log_dir, "*.csv"))):
+    for path in sorted(paths):
         with open(path, "r", encoding="utf-8") as f:
             rows = list(csv.DictReader(f))
         if not rows:
@@ -29,6 +29,10 @@ def load_logs(log_dir):
             )
         data[optimizer] = parsed
     return data
+
+
+def load_logs(log_dir):
+    return load_log_paths(glob.glob(os.path.join(log_dir, "*.csv")))
 
 
 def build_summary(data):

@@ -1,0 +1,5 @@
+optimizer,lr,seed,steps,log_file
+adamw,0.001,42,1000,logs/real_text/fixed_1000/adamw_lr0p001_1000.csv
+sgd,0.01,42,1000,logs/real_text/fixed_1000/sgd_lr0p01_1000.csv
+rmsprop,0.0001,42,1000,logs/real_text/fixed_1000/rmsprop_lr0p0001_1000.csv
+adafactor,0.01,42,1000,logs/real_text/fixed_1000/adafactor_lr0p01_1000.csv

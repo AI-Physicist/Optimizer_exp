@@ -1,8 +1,35 @@
 import csv
+import glob
 import os
 from statistics import mean
 
-from summarize_results import load_logs, make_svg
+from summarize_results import make_svg
+
+
+def load_real_text_logs(log_dir):
+    data = {}
+    pattern = os.path.join(log_dir, "*_real_text.csv")
+    for path in sorted(glob.glob(pattern)):
+        with open(path, "r", encoding="utf-8") as f:
+            rows = list(csv.DictReader(f))
+        if not rows:
+            continue
+        optimizer = rows[0]["optimizer"]
+        parsed = []
+        for r in rows:
+            parsed.append(
+                {
+                    "step": int(r["step"]),
+                    "loss": float(r["loss"]),
+                    "lr": float(r["lr"]),
+                    "step_time": float(r["step_time"]),
+                    "optimizer": r["optimizer"],
+                    "seed": int(r["seed"]),
+                    "peak_memory_mb": float(r["peak_memory_mb"]),
+                }
+            )
+        data[optimizer] = parsed
+    return data
 
 
 def main():
@@ -11,7 +38,7 @@ def main():
     out_dir = os.path.join(root, "results", "real_text")
     os.makedirs(out_dir, exist_ok=True)
 
-    data = load_logs(log_dir)
+    data = load_real_text_logs(log_dir)
     if not data:
         raise RuntimeError(f"No real-text logs found in {log_dir}")
 
