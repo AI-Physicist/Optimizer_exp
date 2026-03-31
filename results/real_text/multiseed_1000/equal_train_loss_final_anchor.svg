@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="520" viewBox="0 0 1000 520">
+<rect x="0" y="0" width="100%" height="100%" fill="#ffffff"/>
+<text x="500.0" y="33" text-anchor="middle" font-size="21" font-family="sans-serif">Near-Converged Equal-Train-Loss Anchor (train_loss ~= 2.4995)</text>
+<rect x="70" y="70" width="860" height="360" fill="#fafafa" stroke="#dddddd"/>
+<line x1="70" y1="430.0" x2="930" y2="430.0" stroke="#eeeeee" stroke-width="1"/>
+<text x="62.0" y="433.0" text-anchor="end" font-size="10" font-family="sans-serif" fill="#666">0.00</text>
+<line x1="70" y1="358.0" x2="930" y2="358.0" stroke="#eeeeee" stroke-width="1"/>
+<text x="62.0" y="361.0" text-anchor="end" font-size="10" font-family="sans-serif" fill="#666">0.60</text>
+<line x1="70" y1="286.0" x2="930" y2="286.0" stroke="#eeeeee" stroke-width="1"/>
+<text x="62.0" y="289.0" text-anchor="end" font-size="10" font-family="sans-serif" fill="#666">1.21</text>
+<line x1="70" y1="214.0" x2="930" y2="214.0" stroke="#eeeeee" stroke-width="1"/>
+<text x="62.0" y="217.0" text-anchor="end" font-size="10" font-family="sans-serif" fill="#666">1.81</text>
+<line x1="70" y1="142.0" x2="930" y2="142.0" stroke="#eeeeee" stroke-width="1"/>
+<text x="62.0" y="145.0" text-anchor="end" font-size="10" font-family="sans-serif" fill="#666">2.41</text>
+<line x1="70" y1="70.0" x2="930" y2="70.0" stroke="#eeeeee" stroke-width="1"/>
+<text x="62.0" y="73.0" text-anchor="end" font-size="10" font-family="sans-serif" fill="#666">3.02</text>
+<rect x="110.8" y="128.6" width="133.3" height="301.4" fill="#ff7f0e" opacity="0.88"/>
+<text x="177.5" y="448.0" text-anchor="middle" font-size="11" font-family="sans-serif">adafactor</text>
+<text x="177.5" y="122.6" text-anchor="middle" font-size="10" font-family="sans-serif">2.526</text>
+<text x="177.5" y="463.0" text-anchor="middle" font-size="9" font-family="sans-serif" fill="#666">ECE 0.060</text>
+<text x="177.5" y="476.0" text-anchor="middle" font-size="9" font-family="sans-serif" fill="#666">||w|| 764.9</text>
+<rect x="325.9" y="130.8" width="133.3" height="299.2" fill="#1f77b4" opacity="0.88"/>
+<text x="392.5" y="448.0" text-anchor="middle" font-size="11" font-family="sans-serif">adamw</text>
+<text x="392.5" y="124.8" text-anchor="middle" font-size="10" font-family="sans-serif">2.507</text>
+<text x="392.5" y="463.0" text-anchor="middle" font-size="9" font-family="sans-serif" fill="#666">ECE 0.022</text>
+<text x="392.5" y="476.0" text-anchor="middle" font-size="9" font-family="sans-serif" fill="#666">||w|| 317.6</text>
+<rect x="540.9" y="117.0" width="133.3" height="313.0" fill="#2ca02c" opacity="0.88"/>
+<text x="607.5" y="448.0" text-anchor="middle" font-size="11" font-family="sans-serif">rmsprop</text>
+<text x="607.5" y="111.0" text-anchor="middle" font-size="10" font-family="sans-serif">2.623</text>
+<text x="607.5" y="463.0" text-anchor="middle" font-size="9" font-family="sans-serif" fill="#666">ECE 0.054</text>
+<text x="607.5" y="476.0" text-anchor="middle" font-size="9" font-family="sans-serif" fill="#666">||w|| 290.3</text>
+<rect x="755.9" y="128.1" width="133.3" height="301.9" fill="#d62728" opacity="0.88"/>
+<text x="822.5" y="448.0" text-anchor="middle" font-size="11" font-family="sans-serif">sgd</text>
+<text x="822.5" y="122.1" text-anchor="middle" font-size="10" font-family="sans-serif">2.529</text>
+<text x="822.5" y="463.0" text-anchor="middle" font-size="9" font-family="sans-serif" fill="#666">ECE 0.025</text>
+<text x="822.5" y="476.0" text-anchor="middle" font-size="9" font-family="sans-serif" fill="#666">||w|| 169.5</text>
+<text x="500.0" y="504.0" text-anchor="middle" font-size="11" font-family="sans-serif">Bar height: test_loss at near-converged equal-train-loss anchor</text>
+</svg>

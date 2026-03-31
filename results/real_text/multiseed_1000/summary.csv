@@ -1,5 +1,5 @@
-optimizer,num_seeds,seeds,final_loss_mean,final_loss_std,avg_step_time_mean,peak_memory_mb_max,max_step
-adamw,3,"1,2,3",1.861599,0.029401,0.008893,338.01,1000
-adafactor,3,"1,2,3",2.353899,0.037448,0.016700,325.27,1000
-sgd,3,"1,2,3",2.434003,0.024286,0.008267,331.61,1000
-rmsprop,3,"1,2,3",2.560675,0.057345,0.008714,331.61,1000
+optimizer,num_seeds,seeds,final_loss_mean,final_loss_std,final_test_loss_mean,final_test_loss_std,final_test_ece_mean,final_test_ece_std,final_test_acc_mean,final_test_acc_std,final_param_norm_l2_mean,final_param_norm_l2_std,avg_step_time_mean,peak_memory_mb_max,max_step
+adamw,3,"1,2,3",1.882399,0.054142,1.976876,0.065908,0.027979,0.005948,0.430339,0.017330,314.877440,0.666999,0.008417,338.01,1000
+adafactor,3,"1,2,3",2.373334,0.006285,2.396520,0.009069,0.038506,0.027041,0.305054,0.013034,953.322904,35.156348,0.016245,325.27,1000
+sgd,3,"1,2,3",2.438027,0.003895,2.467166,0.006320,0.020486,0.002241,0.311279,0.003479,117.060054,0.235488,0.008116,331.61,1000
+rmsprop,3,"1,2,3",2.554173,0.038953,2.652665,0.042735,0.073781,0.026086,0.253723,0.007777,289.527384,0.622563,0.008416,331.61,1000

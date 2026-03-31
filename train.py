@@ -391,7 +391,7 @@ def estimate_top_hessian_eig(
         return float("nan")
 
     vs = normalize_vector_list([torch.randn_like(p) for p in params], eps=eps)
-    lambda_est = float("nan")
+    sigma_est = float("nan")
 
     for _ in range(power_iters):
         logits = model(x)
@@ -400,16 +400,19 @@ def estimate_top_hessian_eig(
         grad_vec_prod = sum((g * v).sum() for g, v in zip(grads, vs))
         hvs = torch.autograd.grad(grad_vec_prod, params, retain_graph=False)
 
-        lambda_est = sum((v * hv).sum().item() for v, hv in zip(vs, hvs))
         hv_norm_sq = 0.0
         for hv in hvs:
             hv_norm_sq += hv.float().pow(2).sum().item()
         hv_norm = math.sqrt(hv_norm_sq)
         if hv_norm <= eps:
-            break
+            return 0.0
+        # For a symmetric Hessian, ||H v|| converges to the operator 2-norm.
+        # This keeps the curvature proxy non-negative even when the dominant
+        # eigenvalue by magnitude is negative.
+        sigma_est = hv_norm
         vs = [hv.detach() / (hv_norm + eps) for hv in hvs]
 
-    return lambda_est
+    return sigma_est
 
 
 def main():

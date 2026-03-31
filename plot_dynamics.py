@@ -19,9 +19,19 @@ PANELS = [
     ("grad_norm_l2", "Grad Norm (L2)", "sci"),
     ("update_ratio", "Update Ratio", "sci"),
     ("grad_update_cos", "Grad-Update Cos", "fixed3"),
-    ("hessian_top_eig", "Top Hessian Eig (power iter)", "sci"),
+    ("hessian_top_eig", "Hessian 2-Norm (power iter)", "sci"),
     ("step_time", "Step Time (s)", "fixed4"),
 ]
+
+REFERENCE_LINES = {
+    "grad_update_cos": [
+        {"value": 0.0, "label": "0", "color": "#666666"},
+        {"value": -1.0, "label": "-1", "color": "#999999"},
+    ],
+    "hessian_top_eig": [
+        {"value": 0.0, "label": "0", "color": "#666666"},
+    ],
+}
 
 
 def parse_float_or_nan(x):
@@ -108,6 +118,8 @@ def panel_y_range(data, key):
     vals = []
     for rows in data.values():
         vals.extend(finite_values(rows, key))
+    for ref in REFERENCE_LINES.get(key, []):
+        vals.append(ref["value"])
     if not vals:
         return 0.0, 1.0
     y_min = min(vals)
@@ -153,6 +165,20 @@ def draw_panel(svg, data, metric, title, fmt_kind, geom, x_min, x_max):
         svg.append(
             f'<text x="{left - 8:.1f}" y="{y + 3:.1f}" text-anchor="end" font-size="10" '
             f'font-family="sans-serif" fill="#555">{fmt_tick(yv, fmt_kind)}</text>'
+        )
+
+    for ref in REFERENCE_LINES.get(metric, []):
+        ref_value = ref["value"]
+        _, y = map_to_plot(
+            x_min, ref_value, x_min, x_max, y_min, y_max, left, top, panel_w, panel_h
+        )
+        svg.append(
+            f'<line x1="{left:.1f}" y1="{y:.1f}" x2="{left + panel_w:.1f}" y2="{y:.1f}" '
+            f'stroke="{ref["color"]}" stroke-width="1.5" stroke-dasharray="6,4"/>'
+        )
+        svg.append(
+            f'<text x="{left + panel_w - 6:.1f}" y="{y - 4:.1f}" text-anchor="end" '
+            f'font-size="10" font-family="sans-serif" fill="{ref["color"]}">{ref["label"]}</text>'
         )
 
     for opt, rows in sorted(data.items()):

@@ -24,6 +24,9 @@ def main():
     parser.add_argument("--batch_size", type=int, default=16)
     parser.add_argument("--seq_len", type=int, default=128)
     parser.add_argument("--seeds", type=str, default="1,2,3")
+    parser.add_argument("--train_split", type=float, default=0.9)
+    parser.add_argument("--eval_batches", type=int, default=8)
+    parser.add_argument("--ece_bins", type=int, default=15)
     parser.add_argument("--log_dir", type=str, default="logs/real_text/multiseed_1000")
     parser.add_argument("--out_dir", type=str, default="results/real_text/multiseed_1000")
     args = parser.parse_args()
@@ -60,6 +63,12 @@ def main():
                 str(args.seq_len),
                 "--seed",
                 str(seed),
+                "--train_split",
+                str(args.train_split),
+                "--eval_batches",
+                str(args.eval_batches),
+                "--ece_bins",
+                str(args.ece_bins),
                 "--log_file",
                 log_file,
             ]
@@ -98,7 +107,51 @@ def main():
                 }
             )
 
+    subprocess.run(
+        [
+            sys.executable,
+            "summarize_real_text_multiseed.py",
+            "--log_dir",
+            args.log_dir,
+            "--out_dir",
+            args.out_dir,
+        ],
+        check=True,
+    )
+    subprocess.run(
+        [
+            sys.executable,
+            "summarize_equal_train_loss.py",
+            "--log_dir",
+            args.log_dir,
+            "--out_dir",
+            args.out_dir,
+            "--pattern",
+            "*.csv",
+        ],
+        check=True,
+    )
+    subprocess.run(
+        [
+            sys.executable,
+            "plot_equal_train_loss.py",
+            "--matches_csv",
+            os.path.join(args.out_dir, "equal_train_loss_matches.csv"),
+            "--out_metrics_svg",
+            os.path.join(args.out_dir, "equal_train_loss_metrics.svg"),
+            "--out_final_anchor_svg",
+            os.path.join(args.out_dir, "equal_train_loss_final_anchor.svg"),
+        ],
+        check=True,
+    )
+
     print(f"[done] {out_csv}")
+    print(f"[done] {os.path.join(args.out_dir, 'summary.csv')}")
+    print(f"[done] {os.path.join(args.out_dir, 'summary.md')}")
+    print(f"[done] {os.path.join(args.out_dir, 'equal_train_loss_summary.csv')}")
+    print(f"[done] {os.path.join(args.out_dir, 'equal_train_loss_summary.md')}")
+    print(f"[done] {os.path.join(args.out_dir, 'equal_train_loss_metrics.svg')}")
+    print(f"[done] {os.path.join(args.out_dir, 'equal_train_loss_final_anchor.svg')}")
 
 
 if __name__ == "__main__":

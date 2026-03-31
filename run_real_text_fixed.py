@@ -25,6 +25,9 @@ def main():
     parser.add_argument("--batch_size", type=int, default=16)
     parser.add_argument("--seq_len", type=int, default=128)
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--train_split", type=float, default=0.9)
+    parser.add_argument("--eval_batches", type=int, default=8)
+    parser.add_argument("--ece_bins", type=int, default=15)
     parser.add_argument("--log_dir", type=str, default="logs/real_text/fixed_1000")
     parser.add_argument("--out_dir", type=str, default="results/real_text/fixed_1000")
     args = parser.parse_args()
@@ -52,6 +55,12 @@ def main():
             str(args.seq_len),
             "--seed",
             str(args.seed),
+            "--train_split",
+            str(args.train_split),
+            "--eval_batches",
+            str(args.eval_batches),
+            "--ece_bins",
+            str(args.ece_bins),
             "--log_file",
             log_file,
         ]
@@ -63,6 +72,19 @@ def main():
     save_summary_csv(os.path.join(args.out_dir, "summary.csv"), summary)
     save_summary_md(os.path.join(args.out_dir, "summary.md"), summary)
     make_svg(data, os.path.join(args.out_dir, "optimizer_comparison.svg"), loss_theoretical_floor=None)
+    subprocess.run(
+        [
+            sys.executable,
+            "summarize_equal_train_loss.py",
+            "--log_dir",
+            args.log_dir,
+            "--out_dir",
+            args.out_dir,
+            "--pattern",
+            "*.csv",
+        ],
+        check=True,
+    )
 
     runs_csv = os.path.join(args.out_dir, "runs.csv")
     with open(runs_csv, "w", newline="", encoding="utf-8") as f:
@@ -88,6 +110,8 @@ def main():
     print(f"saved: {os.path.join(args.out_dir, 'summary.csv')}")
     print(f"saved: {os.path.join(args.out_dir, 'summary.md')}")
     print(f"saved: {os.path.join(args.out_dir, 'optimizer_comparison.svg')}")
+    print(f"saved: {os.path.join(args.out_dir, 'equal_train_loss_summary.csv')}")
+    print(f"saved: {os.path.join(args.out_dir, 'equal_train_loss_summary.md')}")
 
 
 if __name__ == "__main__":

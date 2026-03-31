@@ -117,22 +117,23 @@
 - `update_norm_l2`
 - `update_ratio = update_norm_l2 / param_norm_l2`
 - `grad_update_cos`（更新方向与原始梯度方向的一致性）
-- `hessian_top_eig`（Hessian 最大特征值的近似）
+- `hessian_top_eig`（为兼容旧日志保留字段名，实际记录的是 Hessian 二范数 / 谱范数的近似，理论上非负）
 
 ### 首轮结果（单 seed，1000 steps，log_every=10，统一 GPU）
 
-| optimizer | loss@10 | loss@100 | final_loss | grad_norm: first->last | update_ratio(均值) | grad_update_cos(均值) | hessian_top_eig: first->last |
+| optimizer | loss@10 | loss@100 | final_loss | grad_norm: first->last | update_ratio(均值) | grad_update_cos(均值) | hessian_2_norm: first->last |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| AdamW | 77.392 | 2.618 | **1.975** | 20.02 -> 2.01 | 2.97e-4 | -0.200 | 346.91 -> 219.94 |
-| SGD (momentum=0.9) | 84.859 | 2.994 | 2.468 | 25.31 -> 0.29 | 1.05e-3 | -0.033 | 78.61 -> 19.81 |
-| Adafactor | 76.852 | 8.532 | 2.383 | 36.49 -> 0.97 | 2.06e-2 | -0.092 | 263.83 -> 222.68 |
+| AdamW | 77.392 | 2.618 | **1.975** | 20.02 -> 2.01 | 2.97e-4 | -0.200 | 347.19 -> 220.17 |
+| SGD (momentum=0.9) | 84.859 | 2.994 | 2.468 | 25.31 -> 0.29 | 1.05e-3 | -0.033 | 79.17 -> 19.81 |
+| Adafactor | 76.852 | 8.532 | 2.383 | 36.49 -> 0.97 | 2.06e-2 | -0.092 | 263.84 -> 223.28 |
 
 ### 动力学解读
 
-- **AdamW**：前期降 loss 最快，100 步时已到 `2.618`，最终也达到最低 loss。`grad_update_cos` 均值约 `-0.200`，说明更新方向与原始梯度仅中等一致，体现出明显的自适应预条件特征。`hessian_top_eig` 从约 `346.9` 降到 `219.9`，表明它确实离开了更高曲率区域，但并没有降到像 SGD 那样低的曲率水平。
-- **SGD（含动量）**：`grad_update_cos` 远离 `-1`（均值约 `-0.032`）并非实现错误，而是因为更新方向由“历史动量 + 当前梯度 + weight decay”共同决定，而不是纯 `-g_t`；因此与“当前 batch 梯度”不必高度对齐。它的梯度范数在后期被压得最低，`hessian_top_eig` 也从 `78.6` 降到 `19.8`，局部曲率比 AdamW 更低；但最终 loss 仍停在 `2.468`，说明“更平”不等于“更优”，至少在这个任务和步数预算下，SGD 更像是进入了一个较平但较差的区域。
-- **Adafactor**：`update_ratio` 均值达到 `2.06e-2`，远大于 AdamW 和 SGD，说明参数更新明显更激进；其曲率代理在训练过程中还会出现符号翻转，说明局部几何和估计都更不稳定。它前期下降不慢，但 100 步时 loss 仍有 `8.532`，后续也没能追上 AdamW。
-- **一个重要修正**：统一到 GPU 后，AdamW 与 SGD 的 `step_time` 基本在同一量级（都约 `0.009s`），Adafactor 才明显更慢（约 `0.017s`）。因此先前由混合设备造成的“AdamW 比 SGD 快很多”的结论已被撤回。
+- **AdamW**：前期降 loss 最快，100 步时已到 `2.618`，最终也达到最低 loss。`grad_update_cos` 均值约 `-0.200`，说明更新方向与原始梯度仅中等一致，体现出明显的自适应预条件特征。Hessian 二范数从约 `347.2` 降到 `220.2`，表明它离开了更高曲率区域，但并没有降到像 SGD 那样低的曲率水平。
+- **SGD（含动量）**：`grad_update_cos` 远离 `-1`（均值约 `-0.032`）并非实现错误，而是因为更新方向由“历史动量 + 当前梯度 + weight decay”共同决定，而不是纯 `-g_t`；因此与“当前 batch 梯度”不必高度对齐。它的梯度范数在后期被压得最低，Hessian 二范数也从 `79.2` 降到 `19.8`，局部曲率比 AdamW 更低；但最终 loss 仍停在 `2.468`，说明“更平”不等于“更优”，至少在这个任务和步数预算下，SGD 更像是进入了一个较平但较差的区域。
+- **Adafactor**：`update_ratio` 均值达到 `2.06e-2`，远大于 AdamW 和 SGD，说明参数更新明显更激进。修正估计器之后，它的 Hessian 二范数全程保持非负，但波动仍然最大，范围大约在 `13.7` 到 `775.7` 之间，说明局部几何变化更剧烈。它前期下降不慢，但 100 步时 loss 仍有 `8.532`，后续也没能追上 AdamW。
+- **一个重要修正**：现在记录的曲率量是 Hessian 二范数，而不是带符号的 Rayleigh quotient；因此它不应再出现负值。统一到 GPU 后，AdamW 与 SGD 的 `step_time` 也基本在同一量级（约 `0.009s` vs `0.0084s`），Adafactor 才明显更慢（约 `0.017s`）。
+- **从新图直接读数时的参考系**：`grad_update_cos` 面板增加了 `0` 和 `-1` 参考线，其中 `-1` 表示更新方向与当前梯度几乎完全反向对齐，`0` 表示二者近乎正交；Hessian 面板增加了 `0` 基线，用于确认当前记录的是非负的 Hessian 二范数而非带符号特征值。
 
 ### 图表输出
 
@@ -142,10 +143,104 @@
 `results/real_text/dynamics/optimizer_dynamics.svg`（AdamW）
 - 三优化器合并六联图：
 `results/real_text/dynamics/dynamics_adamw_sgd_adafactor.svg`
+- 新图中已加入关键参考线：
+  - `grad_update_cos`：`0`、`-1`
+  - `hessian_2_norm`：`0`
 
 **代表性结果图（非凸动力学，三优化器合并）**
 
 ![Optimizer Dynamics Combined](results/real_text/dynamics/dynamics_adamw_sgd_adafactor.svg)
+
+---
+
+## 实验四：泛化与隐式正则（同等训练损失对齐）
+
+目标：在**相同训练损失**水平下比较不同优化器的“偏好解”差异，而不是只比较固定 step 的最终值。
+
+### 新增日志指标（`train_real_text.py`）
+
+- `test_loss`
+- `test_ppl`
+- `test_acc`
+- `test_ece`（Expected Calibration Error）
+- `generalization_gap = test_loss - train_loss`
+- `param_norm_l2`（原有字段，作为权重范数代理）
+
+### 运行方式
+
+```bash
+python3 run_real_text_fixed.py --steps 1000 --train_split 0.9 --eval_batches 8 --ece_bins 15
+```
+
+运行后除了原有 `summary.csv/md`，还会生成：
+
+- `equal_train_loss_matches.csv`
+- `equal_train_loss_summary.csv`
+- `equal_train_loss_summary.md`
+
+其中 `equal_train_loss_*` 文件即为“同等训练损失对齐”比较结果。
+
+### 本次结果（2026-03-31，`multiseed_1000`，seeds=`1,2,3`）
+
+额外可视化：
+
+- `results/real_text/multiseed_1000/equal_train_loss_metrics.svg`
+- `results/real_text/multiseed_1000/equal_train_loss_final_anchor.svg`
+
+**图（同等训练损失四联图）**
+
+![Equal Train Loss Metrics](results/real_text/multiseed_1000/equal_train_loss_metrics.svg)
+
+**图（近收敛锚点对比）**
+
+![Equal Train Loss Final Anchor](results/real_text/multiseed_1000/equal_train_loss_final_anchor.svg)
+
+#### 近收敛锚点（`anchor_train_loss ≈ 2.4995`）对比（均值 ± std）
+
+| optimizer | matched_train_loss | test_loss | test_ece | test_acc | param_norm_l2 |
+|---|---:|---:|---:|---:|---:|
+| AdamW | 2.5042 ± 0.0025 | **2.5070 ± 0.0125** | **0.0222 ± 0.0043** | **0.3071 ± 0.0048** | 317.6 ± 0.7 |
+| Adafactor | 2.4971 ± 0.0030 | 2.5259 ± 0.0544 | 0.0604 ± 0.0362 | 0.2740 ± 0.0220 | 764.9 ± 25.2 |
+| SGD | 2.4995 ± 0.0016 | 2.5294 ± 0.0091 | 0.0252 ± 0.0014 | 0.3007 ± 0.0045 | **169.5 ± 11.5** |
+| RMSprop | 2.5165 ± 0.0159 | 2.6232 ± 0.0693 | 0.0538 ± 0.0122 | 0.2541 ± 0.0111 | 290.3 ± 0.2 |
+
+解读：
+
+- **泛化误差（test_loss）**：在几乎相同 train loss 下，AdamW 最低，Adafactor/SGD 接近，RMSprop 最差。
+- **校准（ECE）**：AdamW 最好，SGD 次之；RMSprop 与 Adafactor 在该锚点更差且波动更大。
+- **隐式正则偏好（权重范数）**：SGD 明显偏向低范数解；Adafactor 偏向高范数解；AdamW/RMSprop 居中。
+
+#### 方法注意：全锚点均值会受“匹配误差”影响
+
+`equal_train_loss_summary.csv` 的全锚点均值里，早期高 train loss 区间存在较大的 `abs_train_loss_error`（部分点 > 10 甚至 > 20），这会弱化“同等训练损失”比较的严格性。因此解释时应优先看：
+
+- 低 `abs_train_loss_error` 的锚点；
+- 尤其是近收敛锚点（上表）；
+- 并结合原始固定步数结论一起判断。
+
+### 多 seed 扩展（实验四）
+
+运行：
+
+```bash
+python3 run_real_text_multiseed.py --steps 1000 --seeds 1,2,3 --train_split 0.9 --eval_batches 8 --ece_bins 15
+```
+
+该命令现在会自动生成（`results/real_text/multiseed_1000/`）：
+
+- `summary.csv`
+- `summary.md`
+- `optimizer_comparison.svg`
+- `equal_train_loss_matches.csv`（按 anchor 聚合 seed 后的均值/标准差）
+- `equal_train_loss_summary.csv`
+- `equal_train_loss_summary.md`
+- `equal_train_loss_metrics.svg`
+- `equal_train_loss_final_anchor.svg`
+
+说明：
+
+- `equal_train_loss_matches.csv` 的主列（如 `test_loss`）是 seed 均值，新增 `*_std` 为 seed 间标准差。
+- 如果使用的是旧 multiseed 日志（没有 `test_loss/test_ece/...` 字段），实验四相关统计会为空，需要按上面命令重跑。
 
 ---
 
@@ -185,7 +280,7 @@
 - 数据规模较小（约 2 万字符）
 - 当前多 seed 仅 3 次，统计置信度仍可提升
 - 非凸动力学目前是单 seed 结果，仍需多 seed 统计验证
-- `hessian_top_eig` 是低成本近似，尤其在 Adafactor 上会出现较强噪声和符号波动，解释时应更看趋势而非单点数值
+- `hessian_top_eig` 现在实际表示 Hessian 二范数近似；它依然是低成本代理指标，解释时应更看趋势而非单点数值
 
 ---
 
